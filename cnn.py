@@ -18,7 +18,8 @@ ANALYSIS_IMAGE_PATH = PROJECT_DIR / "images" / "cnn_prediction_analysis.png"
 
 BATCH_SIZE = 64
 LEARNING_RATE = 0.01
-EPOCHS = 5
+EPOCHS = 10
+RANDOM_SEED = 42
 SAMPLES_PER_GROUP = 4
 CANVAS_SIZE = 28
 DIGIT_SIZE = 21
@@ -46,17 +47,34 @@ class CNN(nn.Module):
         return self.classifier(features)
 
 
+def create_transform(train):
+    if train:
+        return transforms.Compose(
+            [
+                transforms.RandomAffine(
+                    degrees=10,
+                    translate=(0.1, 0.1),
+                    scale=(0.9, 1.1),
+                    interpolation=transforms.InterpolationMode.BILINEAR,
+                ),
+                transforms.ToTensor(),
+            ]
+        )
+    return transforms.ToTensor()
+
+
 def create_data_loader(train, shuffle):
     dataset = datasets.MNIST(
         root=DATA_DIR,
         train=train,
         download=True,
-        transform=transforms.ToTensor(),
+        transform=create_transform(train),
     )
     data_loader = DataLoader(
         dataset,
         batch_size=BATCH_SIZE,
         shuffle=shuffle,
+        generator=torch.Generator().manual_seed(RANDOM_SEED) if shuffle else None,
     )
     return dataset, data_loader
 
@@ -72,6 +90,7 @@ def load_model():
 def train():
     import matplotlib.pyplot as plt
 
+    torch.manual_seed(RANDOM_SEED)
     train_dataset, train_loader = create_data_loader(train=True, shuffle=True)
     model = CNN()
     criterion = nn.CrossEntropyLoss()

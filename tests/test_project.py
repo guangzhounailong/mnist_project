@@ -5,6 +5,7 @@ from unittest.mock import patch
 
 import torch
 from PIL import Image, ImageDraw
+from torchvision import transforms
 
 import cnn
 import mlp
@@ -35,6 +36,18 @@ class ModelTests(unittest.TestCase):
 
 
 class PreprocessingTests(unittest.TestCase):
+    def test_cnn_uses_augmentation_only_for_training(self):
+        train_transform = cnn.create_transform(train=True)
+        test_transform = cnn.create_transform(train=False)
+
+        self.assertTrue(
+            any(
+                isinstance(transform, transforms.RandomAffine)
+                for transform in train_transform.transforms
+            )
+        )
+        self.assertIsInstance(test_transform, transforms.ToTensor)
+
     def test_mlp_preprocessing_returns_expected_shape(self):
         image = create_digit_image(background=255, ink=0)
         image_batch, was_inverted = mlp.preprocess_image(image)
