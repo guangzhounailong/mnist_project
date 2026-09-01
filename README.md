@@ -16,12 +16,18 @@ mnist_project/
 ├── mlp.py                    # MLP 完整流程
 ├── cnn.py                    # CNN 完整流程
 ├── compare.py                # 公平比较 MLP 与 CNN
+├── evaluate_detailed.py      # 详细分类指标、混淆矩阵和置信度样本
+├── robustness_test.py        # 常见图像变化下的鲁棒性测试
+├── evaluate_real_images.py   # 真实图片的两种预处理 A/B 测试
 ├── app.py                    # 统一的 Streamlit 界面
+├── REPORT.md                 # 已运行实验的结果与分析
 ├── requirements.txt          # Python 依赖
 ├── tests/
 │   └── test_project.py       # 自动化测试
 ├── data/                     # 自动下载的 MNIST 数据
 ├── models/                   # 训练生成的模型权重
+├── real_images/              # 自行采集并标注的真实手写图片
+├── results/                  # 实验 CSV 结果
 └── images/                   # 测试图片和输出图表
 ```
 
@@ -107,8 +113,35 @@ CNN 会把现实图片转换为灰度图，自动判断笔画颜色、去除灰�
 python compare.py
 ```
 
-比较实验使用相同的 epoch、batch size、学习率、随机种子和训练数据顺序，
-输出参数量、测试准确率和训练时间。
+比较实验默认用 42、123、2026 三个随机种子，使用相同的 epoch、batch size、
+学习率和训练数据，输出参数量、测试准确率、Macro F1 和训练时间，并保存到
+`results/experiment_results.csv`。可用 `--seeds`、`--epochs` 和
+`--learning-rate` 修改设置。
+
+## 详细评估与鲁棒性测试
+
+先训练并保存两个模型，然后运行：
+
+```bash
+python evaluate_detailed.py
+python robustness_test.py
+```
+
+第一个命令生成整体与逐类 Precision、Recall、F1、混淆矩阵，以及高置信度
+错误和低置信度正确样本。第二个命令测试旋转、平移、高斯噪声、模糊和亮度
+变化，生成 CSV 与对比图。已运行结果及实验边界见 `REPORT.md`。
+
+## 真实图片 A/B 测试
+
+将 20 至 50 张真实手写数字放入 `real_images/`，文件名以标签开头（如
+`7_01.jpg`），或按标签建立子目录（如 `7/01.jpg`），然后运行：
+
+```bash
+python evaluate_real_images.py
+```
+
+脚本比较“仅灰度缩放”和“背景检测、自动反色、裁剪、重心对齐”两种流程，
+但不会在没有真实标注图片时生成虚假结果。
 
 ## Web 界面
 
@@ -132,6 +165,7 @@ python -m unittest discover -s tests -v
 - CNN 只在训练集启用随机数据增强。
 - 白底黑字、灰底白字、空白图片等预处理情况。
 - 临时保存并重新加载 `state_dict` 后的预测接口。
+- 分类指标、鲁棒性变换和真实图片标签/简单预处理。
 
 ## 设计参考
 

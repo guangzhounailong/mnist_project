@@ -8,7 +8,10 @@ from PIL import Image, ImageDraw
 from torchvision import transforms
 
 import cnn
+import evaluate_real_images
+import experiment_utils
 import mlp
+import robustness_test
 
 
 def create_digit_image(background, ink):
@@ -123,6 +126,59 @@ class PredictionTests(unittest.TestCase):
             cnn.CNN(),
             create_digit_image(background=110, ink=235),
         )
+
+
+class ExperimentUtilityTests(unittest.TestCase):
+    def test_classification_metrics_match_known_predictions(self):
+        labels = torch.tensor([0, 0, 1, 1, 2, 2])
+        predictions = torch.tensor([0, 1, 1, 1, 0, 2])
+
+        metrics = experiment_utils.calculate_metrics(
+            labels,
+            predictions,
+            number_of_classes=3,
+        )
+
+        self.assertAlmostEqual(metrics["accuracy"], 4 / 6)
+        self.assertAlmostEqual(metrics["recall"][0].item(), 0.5)
+        self.assertAlmostEqual(metrics["precision"][1].item(), 2 / 3)
+        self.assertTrue(
+            torch.equal(
+                metrics["confusion_matrix"],
+                torch.tensor([[1, 1, 0], [0, 2, 0], [1, 0, 1]]),
+            )
+        )
+
+    def test_robustness_conditions_preserve_image_batch(self):
+        images = torch.full((2, 1, 28, 28), 0.5)
+        generator = torch.Generator().manual_seed(42)
+
+        for condition in robustness_test.CONDITIONS:
+            changed = robustness_test.apply_condition(images, condition, generator)
+            self.assertEqual(changed.shape, images.shape)
+            self.assertGreaterEqual(changed.min().item(), 0.0)
+            self.assertLessEqual(changed.max().item(), 1.0)
+
+    def test_real_image_labels_support_filename_and_directory(self):
+        root = Path("real_images")
+
+        self.assertEqual(
+            evaluate_real_images.parse_label(root / "7_sample.jpg", root),
+            7,
+        )
+        self.assertEqual(
+            evaluate_real_images.parse_label(root / "3" / "sample.jpg", root),
+            3,
+        )
+
+    def test_simple_real_image_preprocessing_only_resizes_grayscale(self):
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            image_path = Path(temporary_directory) / "4_sample.png"
+            Image.new("RGB", (40, 60), "white").save(image_path)
+            image_batch = evaluate_real_images.simple_preprocess(image_path)
+
+        self.assertEqual(image_batch.shape, (1, 1, 28, 28))
+        self.assertEqual(image_batch.min().item(), 1.0)
 
 
 if __name__ == "__main__":

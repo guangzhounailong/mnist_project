@@ -1,0 +1,13 @@
+model,condition,parameters,seed,accuracy
+MLP,original,No change,42,0.918100
+MLP,rotation,10 degrees clockwise,42,0.890000
+MLP,translation,2 pixels right and down,42,0.336700
+MLP,gaussian_noise,standard deviation 0.20,42,0.891400
+MLP,blur,"3x3 Gaussian blur, sigma 1.0",42,0.915400
+MLP,brightness,60% brightness,42,0.913800
+CNN,original,No change,42,0.977600
+CNN,rotation,10 degrees clockwise,42,0.964700
+CNN,translation,2 pixels right and down,42,0.954700
+CNN,gaussian_noise,standard deviation 0.20,42,0.903900
+CNN,blur,"3x3 Gaussian blur, sigma 1.0",42,0.976300
+CNN,brightness,60% brightness,42,0.977500

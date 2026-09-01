@@ -18,6 +18,7 @@ ANALYSIS_IMAGE_PATH = PROJECT_DIR / "images" / "prediction_analysis.png"
 BATCH_SIZE = 64
 LEARNING_RATE = 0.01
 EPOCHS = 5
+RANDOM_SEED = 42
 SAMPLES_PER_GROUP = 4
 
 
@@ -49,6 +50,7 @@ def create_data_loader(train, shuffle):
         dataset,
         batch_size=BATCH_SIZE,
         shuffle=shuffle,
+        generator=torch.Generator().manual_seed(RANDOM_SEED) if shuffle else None,
     )
     return dataset, data_loader
 
@@ -64,6 +66,7 @@ def load_model():
 def train():
     import matplotlib.pyplot as plt
 
+    torch.manual_seed(RANDOM_SEED)
     train_dataset, train_loader = create_data_loader(train=True, shuffle=True)
     model = MLP()
     criterion = nn.CrossEntropyLoss()
